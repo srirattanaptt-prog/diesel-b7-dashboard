@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OR Diesel B7 Omni-Directional Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Prompt', sans-serif; background-color: #f9fafb; color: #374151; }
+        .glass-card { background: #ffffff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #f3f4f6; padding: 24px; }
+        .input-minimal { width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; font-size: 16px; outline: none; transition: border 0.2s; }
+        .input-minimal:focus { border-color: #3b82f6; background: #ffffff; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-5xl mx-auto">
+        
+        <div class="mb-8 text-center">
+            <h1 class="text-2xl md:text-3xl font-semibold text-gray-800">Diesel B7 Omni-Directional Analysis</h1>
+            <p class="text-gray-500 mt-2 text-sm">วิเคราะห์ปริมาณสั่งซื้อรองรับความผันผวนราคาน้ำมันทั้งขาขึ้นและขาลง</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <div class="glass-card flex flex-col gap-5">
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">ยอดสั่งซื้อสะสม 1-24 มิ.ย. (ลิตร)</label>
+                    <input type="number" id="input_sales24" value="400000" class="input-minimal" oninput="calculate()">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">ยอดขายเฉลี่ยต่อวัน (ลิตร)</label>
+                    <input type="number" id="input_daily" value="15000" class="input-minimal" oninput="calculate()">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">พื้นที่ว่างในถังใต้ดิน (ลิตร)</label>
+                    <input type="number" id="input_ullage" value="180000" class="input-minimal" oninput="calculate()">
+                </div>
+                
+                <div class="pt-2 border-t border-gray-100" id="slider_container">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-medium text-gray-500" id="label_direction">แนวโน้มการปรับราคาน้ำมัน</label>
+                        <span class="text-sm font-bold" id="drop_val_display">0.00 ฿/L</span>
+                    </div>
+                    <input type="range" id="input_drop" min="-5.00" max="5.00" step="0.10" value="1.50" class="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="calculate()">
+                    <div class="flex justify-between text-[10px] text-gray-400 mt-1">
+                        <span class="text-red-500 font-medium">ราคาลดลง (-5.00)</span>
+                        <span>0.00</span>
+                        <span class="text-emerald-600 font-medium">ราคาเพิ่มขึ้น (+5.00)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card md:col-span-2 flex flex-col">
+                
+                <div class="grid grid-cols-3 gap-3 mb-6">
+                    <div class="p-3 rounded-xl border transition-colors duration-200" id="card_be">
+                        <p class="text-xs font-medium mb-1" id="label_be_card">จุดเริ่มคุ้มทุน</p>
+                        <h3 class="text-xl font-semibold" id="out_be_days">7.1 <span class="text-xs font-normal">วัน</span></h3>
+                        <p class="text-xs mt-1 opacity-80" id="out_be_liters">≈ 106,000 ลิตร</p>
+                    </div>
+                    
+                    <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                        <p class="text-xs text-blue-600 font-medium mb-1">ปริมาณสั่งซื้อที่เหมาะสม</p>
+                        <h3 class="text-xl font-semibold text-blue-700" id="out_opt_days">12.0 <span class="text-xs font-normal">วัน</span></h3>
+                        <p class="text-xs text-blue-600 mt-1 opacity-80" id="out_opt_liters">≈ 180,000 ลิตร</p>
+                    </div>
+
+                    <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] px-2 py-0.5 rounded-bl-lg font-bold">EST. NET</div>
+                        <p class="text-xs text-emerald-700 font-medium mb-1 pt-1">ผลประโยชน์สุทธิคาดหวัง</p>
+                        <h3 class="text-xl font-bold text-emerald-600" id="out_max_profit">+ 92,500 <span class="text-xs font-normal">บาท</span></h3>
+                        <p class="text-[10px] text-emerald-600 mt-1 opacity-75" id="label_profit_sub">รวมผลกระทบราคาแล้ว</p>
+                    </div>
+                </div>
+
+                <div class="relative flex-grow min-h-[220px]">
+                    <canvas id="optChart"></canvas>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartInstance = null;
+
+        function calculate() {
+            const sales24 = parseFloat(document.getElementById('input_sales24').value) || 0;
+            const avgDaily = parseFloat(document.getElementById('input_daily').value) || 1;
+            const ullage = parseFloat(document.getElementById('input_ullage').value) || 0; 
+            const priceChange = parseFloat(document.getElementById('input_drop').value) || 0;
+
+            const displayEl = document.getElementById('drop_val_display');
+            const sliderEl = document.getElementById('input_drop');
+            
+            // ปรับแต่งสีตัวเลขตามทิศทางราคา
+            if (priceChange > 0) {
+                displayEl.innerText = "+" + priceChange.toFixed(2) + " ฿/L";
+                displayEl.className = "text-sm font-bold text-emerald-600";
+                sliderEl.style.accentColor = "#10b981";
+            } else if (priceChange < 0) {
+                displayEl.innerText = priceChange.toFixed(2) + " ฿/L";
+                displayEl.className = "text-sm font-bold text-rose-500";
+                sliderEl.style.accentColor = "#ef4444";
+            } else {
+                displayEl.innerText = "0.00 ฿/L";
+                displayEl.className = "text-sm font-bold text-gray-500";
+                sliderEl.style.accentColor = "#3b82f6";
+            }
+
+            const baseQty = (sales24 / 24) * 6;
+            const sales6Days = avgDaily * 6;
+            const maxDays = ullage / avgDaily;
+
+            let netImpactPerLiter = 0;
+            let totalProfitMax = 0;
+            let d_be_real = 0;
+            let v_be_real = 0;
+
+            const cardBeEl = document.getElementById('card_be');
+            const labelBeCardEl = document.getElementById('label_be_card');
+
+            if (priceChange >= 0) {
+                // === โหมดน้ำมันขาขึ้น ===
+                netImpactPerLiter = priceChange; // กำไรสต็อกเต็มๆ ดีลเลอร์ได้ 100% ไม่ต้องแบ่งใคร
+                
+                // ขาขึ้นไม่มีความเสี่ยงขาดทุน จุดคุ้มทุนจึงเป็นศูนย์ หรือจุดที่เกินยอดฐานเพื่อเร่งกำไร
+                v_be_real = baseQty;
+                d_be_real = baseQty / avgDaily;
+                
+                cardBeEl.className = "p-3 bg-blue-50 rounded-xl border border-blue-100";
+                labelBeCardEl.className = "text-xs text-blue-600 font-medium mb-1";
+                labelBeCardEl.innerText = "จุดเริ่มเร่งกำไร (Base)";
+
+                // คำนวณกำไรสูงสุดที่จุดเต็มถัง (Rebate + Stock Gain จากน้ำมันค้างหลุมปลายงวด)
+                let rebateMax = ullage > baseQty ? 2 * (ullage - baseQty) : 0;
+                let stockGainMax = netImpactPerLiter * Math.max(0, ullage - sales6Days);
+                totalProfitMax = rebateMax + stockGainMax;
+                
+                document.getElementById('label_profit_sub').innerText = "รวมกำไรจาก Stock ขาขึ้นแล้ว";
+            } else {
+                // === โหมดน้ำมันขาลง (ตรรกะเดิม) ===
+                const positiveDrop = Math.abs(priceChange);
+                netImpactPerLiter = 0.5 * positiveDrop; // ขาลง OR ช่วย 50% รับความเสี่ยงจริงครึ่งเดียว
+                const denom = 2 - netImpactPerLiter;
+
+                if (denom > 0) {
+                    v_be_real = (2 * baseQty - netImpactPerLiter * sales6Days) / denom;
+                    v_be_real = Math.max(0, v_be_real);
+                    d_be_real = v_be_real / avgDaily;
+                }
+
+                cardBeEl.className = "p-3 bg-rose-50 rounded-xl border border-rose-100";
+                labelBeCardEl.className = "text-xs text-rose-600 font-medium mb-1";
+                labelBeCardEl.innerText = "จุดเริ่มคุ้มทุนหน้าลาน";
+
+                let rebateMax = ullage > baseQty ? 2 * (ullage - baseQty) : 0;
+                let lossMax = netImpactPerLiter * Math.max(0, ullage - sales6Days);
+                totalProfitMax = rebateMax - lossMax;
+                
+                document.getElementById('label_profit_sub').innerText = "หักลบความเสี่ยงราคาลงแล้ว";
+            }
+
+            // แสดงผลลัพธ์ลงการ์ด
+            document.getElementById('out_be_days').innerHTML = `${d_be_real.toFixed(1)} <span class="text-sm font-normal">วัน</span>`;
+            document.getElementById('out_be_liters').innerText = `≈ ${Math.round(v_be_real).toLocaleString()} ลิตร`;
+            
+            document.getElementById('out_opt_days').innerHTML = `${maxDays.toFixed(1)} <span class="text-sm font-normal">วัน</span>`;
+            document.getElementById('out_opt_liters').innerText = `≈ ${Math.round(ullage).toLocaleString()} ลิตร (เต็มความจุ)`;
+
+            const profitText = totalProfitMax >= 0 ? `+ ${Math.round(totalProfitMax).toLocaleString()}` : `- ${Math.abs(Math.round(totalProfitMax)).toLocaleString()}`;
+            const profitColor = totalProfitMax >= 0 ? 'text-emerald-600' : 'text-rose-600';
+            const profitEl = document.getElementById('out_max_profit');
+            profitEl.innerHTML = `${profitText} <span class="text-sm font-normal">บาท</span>`;
+            profitEl.className = `text-xl font-bold ${profitColor}`;
+
+            updateChart(avgDaily, maxDays, baseQty, sales6Days, priceChange);
+        }
+
+        function updateChart(avgDaily, maxDays, baseQty, sales6Days, priceChange) {
+            const ctx = document.getElementById('optChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            const plotMaxDays = maxDays + 1;
+            const steps = 40;
+            let daysData = [];
+            let profitData = [];
+
+            for (let i = 0; i <= steps; i++) {
+                let d = (i / steps) * plotMaxDays;
+                let vol = d * avgDaily;
+                
+                let rebate = vol > baseQty ? 2 * (vol - baseQty) : 0;
+                let netProfit = 0;
+
+                if (priceChange >= 0) {
+                    // ขาขึ้น: กำไร = ส่วนลด + กำไรสต็อกปลายงวด
+                    let stockGain = priceChange * Math.max(0, vol - sales6Days);
+                    netProfit = rebate + stockGain;
+                } else {
+                    // ขาลง: กำไร = ส่วนลด - ขาดทุนสต็อกปลายงวด (คิดที่ความเสี่ยง 50%)
+                    let netLossPerLiter = 0.5 * Math.abs(priceChange);
+                    let loss = netLossPerLiter * Math.max(0, vol - sales6Days);
+                    netProfit = rebate - loss;
+                }
+
+                daysData.push(d.toFixed(1));
+                profitData.push(netProfit);
+            }
+
+            const isProfitable = priceChange >= 0;
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: daysData,
+                    datasets: [{
+                        label: 'ผลประโยชน์สุทธิ (บาท)',
+                        data: profitData,
+                        borderColor: isProfitable ? '#10b981' : '#f43f5e',
+                        backgroundColor: isProfitable ? 'rgba(16, 185, 129, 0.05)' : 'rgba(244, 63, 94, 0.05)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: true,
+                        tension: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'ปริมาณที่สั่งครอบคลุมยอดขาย (วัน)', color: '#9ca3af', font: {size: 11} },
+                            grid: { display: false }
+                        },
+                        y: {
+                            grid: { color: (ctx) => ctx.tick.value === 0 ? '#d1d5db' : '#f3f4f6' },
+                            border: { dash: [4, 4] }
+                        }
+                    }
+                }
+            });
+        }
+
+        window.onload = calculate;
+    </script>
+</body>
+</html>
