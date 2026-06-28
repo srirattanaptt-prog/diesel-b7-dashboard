@@ -28,13 +28,12 @@
             <div class="glass-card flex flex-col gap-4 order-2 lg:order-1">
                 <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">Station Parameters</h2>
                 
-                <!-- กล่องแนวโน้มราคาน้ำมัน (เพิ่ม id="price_box" เพื่อควบคุมสี) -->
-                <div class="p-3 rounded-xl border border-gray-100 transition-colors duration-500" id="price_box">
+                <div class="p-3 rounded-xl border transition-colors duration-500 border-gray-100" id="price_box">
                     <div class="flex justify-between items-center mb-1">
                         <label class="text-xs font-bold text-gray-600">แนวโน้มการปรับราคาน้ำมัน</label>
                         <span class="text-sm font-bold" id="drop_val_display">0.00 ฿/L</span>
                     </div>
-                    <input type="range" id="input_drop" min="-5.00" max="5.00" step="0.10" value="1.50" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="calculate()">
+                    <input type="range" id="input_drop" min="-5.00" max="5.00" step="0.10" value="1.50" class="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-300" oninput="calculate()">
                     <div class="flex justify-between text-[9px] text-gray-400 mt-1">
                         <span class="text-rose-500 font-medium">ราคาลดลง (-5.00)</span>
                         <span>0.00</span>
@@ -74,15 +73,22 @@
                         <h3 class="text-xl font-bold text-blue-700" id="out_opt_days">12.0 <span class="text-xs font-normal">วัน</span></h3>
                         <p class="text-[11px] text-blue-600 opacity-80" id="out_opt_liters">≈ 180,000 ลิตร</p>
                     </div>
-                    <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100 relative overflow-hidden transition-colors duration-500" id="card_profit_container">
-                        <div class="absolute top-0 right-0 bg-emerald-500 text-white text-[8px] px-1.5 py-0.5 rounded-bl-lg font-bold" id="badge_net">EST. NET</div>
-                        <p class="text-[11px] text-emerald-700 font-medium mb-0.5" id="label_profit_main">ผลประโยชน์สุทธิคาดหวัง</p>
-                        <h3 class="text-xl font-bold text-emerald-600" id="out_max_profit">+ 92,500 <span class="text-xs font-normal">บาท</span></h3>
+                    <div class="p-3 rounded-xl border relative overflow-hidden transition-colors duration-500" id="card_profit_container">
+                        <div class="absolute top-0 right-0 text-white text-[8px] px-1.5 py-0.5 rounded-bl-lg font-bold" id="badge_net">EST. NET</div>
+                        <p class="text-[11px] font-medium mb-0.5" id="label_profit_main">ผลประโยชน์สุทธิคาดหวัง</p>
+                        <h3 class="text-xl font-bold" id="out_max_profit">+ 92,500 <span class="text-xs font-normal">บาท</span></h3>
                     </div>
                 </div>
                 <div class="relative w-full h-64 sm:h-72 lg:h-80"><canvas id="optChart"></canvas></div>
             </div>
         </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto w-full mt-8 pt-4 border-t border-gray-200 text-justify">
+        <p class="text-[9px] text-gray-400 leading-relaxed font-sans uppercase tracking-wider font-semibold mb-0.5">Legal Disclaimer</p>
+        <p class="text-[8px] md:text-[9px] text-gray-400 leading-relaxed font-sans">
+            The data, financial simulations, and analytical visualizations provided by this platform ("Advance Dynamic Platform") are generated for informational and simulation purposes only. They do not constitute official financial advice, legally binding projections, or formal operational instructions from PTT, OR, or any of their affiliates. While every attempt has been made to incorporate official parameters regarding rebate notes and price drop risk support, actual financial outcomes at the forecourt level may vary depending on local station variables, accurate physical stock verifications, market volatility, and individual supply chain configurations. Users and station dealers are strictly advised to execute final ordering and commercial decisions at their own discretion and verify calculations directly with authorized company representatives. Advance Dynamic Platform shall not be held liable for any commercial losses, margin variations, or operational deficits resulting from the use of this analytical tool.
+        </p>
     </div>
 
     <script>
@@ -94,13 +100,10 @@
             const priceChange = parseFloat(document.getElementById('input_drop').value) || 0;
             const baseQty = (sales24 / 24) * 6;
 
-            // ปรับสีกล่องแนวโน้มราคา
             const priceBox = document.getElementById('price_box');
-            if (priceChange > 0) priceBox.className = "p-3 rounded-xl border transition-colors duration-500 bg-emerald-50 border-emerald-100";
-            else if (priceChange < 0) priceBox.className = "p-3 rounded-xl border transition-colors duration-500 bg-rose-50 border-rose-100";
-            else priceBox.className = "p-3 rounded-xl border transition-colors duration-500 bg-gray-50 border-gray-100";
+            priceBox.className = "p-3 rounded-xl border transition-colors duration-500 " + (priceChange > 0 ? "bg-emerald-50 border-emerald-100" : (priceChange < 0 ? "bg-rose-50 border-rose-100" : "bg-gray-50 border-gray-100"));
+            document.getElementById('input_drop').className = "w-full h-1.5 rounded-lg appearance-none cursor-pointer " + (priceChange > 0 ? "bg-emerald-500" : (priceChange < 0 ? "bg-rose-500" : "bg-gray-300"));
 
-            // Warning & Suggestion Logic (เดิม)
             const warningBox = document.getElementById('warning_box');
             let warnings = [];
             if (ullage < baseQty) warnings.push("พื้นที่ถังต่ำกว่ายอดฐานโครงการ");
@@ -108,16 +111,14 @@
             warningBox.className = warnings.length ? "p-3 mb-4 rounded-lg text-[11px] font-medium border block " + (priceChange < -2 ? "bg-red-50 border-red-200 text-red-700" : "bg-amber-50 border-amber-200 text-amber-700") : "hidden";
             warningBox.innerText = warnings.join(" | ");
 
-            const suggestBox = document.getElementById('suggestion_box');
-            suggestBox.className = ullage < baseQty ? "mt-3 p-3 rounded-lg border bg-amber-50 border-amber-100 text-amber-700 text-[11px] font-medium" : "mt-3 p-3 rounded-lg border bg-emerald-50 border-emerald-100 text-emerald-700 text-[11px] font-medium";
-            document.getElementById('suggestion_text').innerText = ullage < baseQty ? `แนะนำ: สั่งเพิ่มอีก ${Math.round(baseQty - ullage).toLocaleString()} ลิตร เพื่อเริ่มรับส่วนลด 2 บาท/ลิตร` : `สถานะ: อยู่ในเกณฑ์ส่วนลด 2 บาท/ลิตร`;
+            const sb = document.getElementById('suggestion_box');
+            sb.classList.remove('hidden');
+            sb.className = "mt-3 p-3 rounded-lg border text-[11px] font-medium block " + (ullage < baseQty ? "bg-amber-50 border-amber-100 text-amber-700" : "bg-emerald-50 border-emerald-100 text-emerald-700");
+            document.getElementById('suggestion_text').innerText = ullage < baseQty ? `แนะนำ: สั่งเพิ่มอีก ${Math.round(baseQty - ullage).toLocaleString()} ลิตร เพื่อเริ่มรับส่วนลด 2 บาท/ลิตร` : `สถานะ: อยู่ในเกณฑ์ส่วนลด 2 บาท/ลิตร (ส่วนเกินยอดฐาน ${Math.round(ullage - baseQty).toLocaleString()} ลิตร)`;
 
-            const displayEl = document.getElementById('drop_val_display');
-            displayEl.innerText = (priceChange >= 0 ? "+" : "") + priceChange.toFixed(2) + " ฿/L";
-            
             const totalProfitMax = (ullage > baseQty ? 2 * (ullage - baseQty) : 0) + (priceChange * Math.max(0, ullage - (avgDaily * 6)));
             const isProfitable = totalProfitMax >= 0;
-            
+
             const profitCard = document.getElementById('card_profit_container');
             profitCard.className = `p-3 rounded-xl border relative overflow-hidden transition-colors duration-500 ${isProfitable ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`;
             document.getElementById('badge_net').className = `absolute top-0 right-0 text-white text-[8px] px-1.5 py-0.5 rounded-bl-lg font-bold ${isProfitable ? 'bg-emerald-500' : 'bg-rose-500'}`;
@@ -125,6 +126,7 @@
             document.getElementById('label_profit_main').className = `text-[11px] font-medium mb-0.5 ${isProfitable ? 'text-emerald-700' : 'text-rose-700'}`;
             document.getElementById('out_max_profit').innerHTML = `${isProfitable ? '+' : '-'} ${Math.abs(Math.round(totalProfitMax)).toLocaleString()} <span class="text-xs font-normal">บาท</span>`;
 
+            document.getElementById('drop_val_display').innerText = (priceChange >= 0 ? "+" : "") + priceChange.toFixed(2) + " ฿/L";
             updateChart(avgDaily, ullage / avgDaily, baseQty, avgDaily * 6, priceChange, isProfitable);
         }
 
@@ -135,10 +137,8 @@
             for(let i=0; i<=40; i++) {
                 let d = (i/40) * (maxDays + 2);
                 let vol = d * avgDaily;
-                let rebate = vol > baseQty ? 2 * (vol - baseQty) : 0;
-                let netProfit = rebate + (priceChange * Math.max(0, vol - sales6Days));
-                dData.push(d.toFixed(1));
-                pData.push(netProfit);
+                let netProfit = (vol > baseQty ? 2*(vol-baseQty) : 0) + (priceChange * Math.max(0, vol-sales6Days));
+                dData.push(d.toFixed(1)); pData.push(netProfit);
             }
             chartInstance = new Chart(ctx, { 
                 type: 'line', 
