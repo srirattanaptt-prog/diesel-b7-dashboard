@@ -19,21 +19,17 @@
 <body class="p-4 md:p-8 flex flex-col min-h-screen justify-between bg-gray-50">
     <div class="max-w-5xl mx-auto w-full flex-grow">
         
-        <!-- Header Group Name & Slogan -->
         <div class="mb-6 text-center">
             <h1 class="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Advance Dynamic Platform</h1>
             <p class="text-blue-600 font-medium text-xs mt-1 tracking-wide uppercase">The Power Behind the PTT Dealer Station</p>
             <div class="h-1 w-16 bg-blue-500 mx-auto mt-3 rounded-full"></div>
         </div>
         
-        <!-- Main Layout -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
             
-            <!-- Panel Input -->
             <div class="glass-card flex flex-col gap-4 order-2 lg:order-1">
                 <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">Station Parameters</h2>
                 
-                <!-- ย้ายแถบสไลด์ปรับราคาน้ำมันขึ้นมาอยู่อันดับ 1 บนสุดของฝั่ง Input แล้วตามที่ขอ -->
                 <div class="p-3 bg-gray-50 rounded-xl border border-gray-100" id="slider_container">
                     <div class="flex justify-between items-center mb-1">
                         <label class="text-xs font-bold text-gray-600">แนวโน้มการปรับราคาน้ำมัน</label>
@@ -61,26 +57,24 @@
                 </div>
             </div>
 
-            <!-- Panel Result: Summary & Chart -->
             <div class="glass-card lg:col-span-2 flex flex-col order-1 lg:order-2">
                 <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2 mb-4">CVP Profitability Evaluation</h2>
                 
+                <div id="warning_box" class="hidden p-3 mb-4 rounded-lg text-[11px] font-medium border animate-pulse"></div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-                    <!-- ข้อมูลจุดคุ้มทุน/จุดเร่งกำไร -->
                     <div class="p-3 rounded-xl border transition-colors duration-200" id="card_be">
                         <p class="text-[11px] font-medium mb-0.5" id="label_be_card">จุดเริ่มคุ้มทุน</p>
                         <h3 class="text-xl font-bold" id="out_be_days">7.1 <span class="text-xs font-normal">วัน</span></h3>
                         <p class="text-[11px] opacity-80" id="out_be_liters">≈ 106,000 ลิตร</p>
                     </div>
                     
-                    <!-- ข้อมูลจุดสั่งซื้อคุ้มค่าที่สุด -->
                     <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
                         <p class="text-[11px] text-blue-600 font-medium mb-0.5">ปริมาณสั่งซื้อที่เหมาะสม</p>
                         <h3 class="text-xl font-bold text-blue-700" id="out_opt_days">12.0 <span class="text-xs font-normal">วัน</span></h3>
                         <p class="text-[11px] text-blue-600 opacity-80" id="out_opt_liters">≈ 180,000 ลิตร</p>
                     </div>
 
-                    <!-- ข้อมูลกำไรสุทธิสูงสุด -->
                     <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100 relative overflow-hidden">
                         <div class="absolute top-0 right-0 bg-emerald-500 text-white text-[8px] px-1.5 py-0.5 rounded-bl-lg font-bold">EST. NET</div>
                         <p class="text-[11px] text-emerald-700 font-medium mb-0.5">ผลประโยชน์สุทธิคาดหวัง</p>
@@ -92,17 +86,8 @@
                 <div class="relative w-full h-64 sm:h-72 lg:h-80">
                     <canvas id="optChart"></canvas>
                 </div>
-
             </div>
         </div>
-    </div>
-
-    <!-- Legal Disclaimer Section -->
-    <div class="max-w-5xl mx-auto w-full mt-8 pt-4 border-t border-gray-200 text-justify">
-        <p class="text-[9px] text-gray-400 leading-relaxed font-sans uppercase tracking-wider font-semibold mb-0.5">Legal Disclaimer</p>
-        <p class="text-[8px] md:text-[9px] text-gray-400 leading-relaxed font-sans">
-            The data, financial simulations, and analytical visualizations provided by this platform ("Advance Dynamic Platform") are generated for informational and simulation purposes only. They do not constitute official financial advice, legally binding projections, or formal operational instructions from PTT, OR, or any of their affiliates. While every attempt has been made to incorporate official parameters regarding rebate notes and price drop risk support, actual financial outcomes at the forecourt level may vary depending on local station variables, accurate physical stock verifications, market volatility, and individual supply chain configurations. Users and station dealers are strictly advised to execute final ordering and commercial decisions at their own discretion and verify calculations directly with authorized company representatives. Advance Dynamic Platform shall not be held liable for any commercial losses, margin variations, or operational deficits resulting from the use of this analytical tool.
-        </p>
     </div>
 
     <script>
@@ -113,6 +98,19 @@
             const avgDaily = parseFloat(document.getElementById('input_daily').value) || 1;
             const ullage = parseFloat(document.getElementById('input_ullage').value) || 0; 
             const priceChange = parseFloat(document.getElementById('input_drop').value) || 0;
+
+            // ตรรกะ Warning Message
+            const warningBox = document.getElementById('warning_box');
+            let warnings = [];
+            if (ullage < (sales24 / 24) * 6) warnings.push("⚠️ พื้นที่ถังต่ำกว่ายอดฐานโครงการ");
+            if (priceChange < -2) warnings.push("🚨 ราคาน้ำมันลดลงแรง ความเสี่ยงสูง");
+
+            if(warnings.length > 0) {
+                warningBox.className = "p-3 mb-4 rounded-lg text-[11px] font-medium border block " + (priceChange < -2 ? "bg-red-50 border-red-200 text-red-700" : "bg-amber-50 border-amber-200 text-amber-700");
+                warningBox.innerText = warnings.join(" | ");
+            } else {
+                warningBox.className = "hidden";
+            }
 
             const displayEl = document.getElementById('drop_val_display');
             const sliderEl = document.getElementById('input_drop');
@@ -246,15 +244,8 @@
                     interaction: { mode: 'index', intersect: false },
                     plugins: { legend: { display: false } },
                     scales: {
-                        x: {
-                            title: { display: true, text: 'ยอดสั่งซื้อครอบคลุม (วัน)', color: '#9ca3af', font: {size: 10} },
-                            grid: { display: false }
-                        },
-                        y: {
-                            grid: { color: (ctx) => ctx.tick.value === 0 ? '#d1d5db' : '#f3f4f6' },
-                            border: { dash: [4, 4] },
-                            ticks: { font: { size: 10 } }
-                        }
+                        x: { title: { display: true, text: 'ยอดสั่งซื้อครอบคลุม (วัน)', color: '#9ca3af', font: {size: 10} }, grid: { display: false } },
+                        y: { grid: { color: (ctx) => ctx.tick.value === 0 ? '#d1d5db' : '#f3f4f6' }, border: { dash: [4, 4] }, ticks: { font: { size: 10 } } }
                     }
                 }
             });
