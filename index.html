@@ -18,7 +18,6 @@
 </head>
 <body class="p-4 md:p-8 flex flex-col min-h-screen justify-between bg-gray-50">
     <div class="max-w-5xl mx-auto w-full flex-grow">
-        
         <div class="mb-6 text-center">
             <h1 class="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Advance Dynamic Platform</h1>
             <p class="text-blue-600 font-medium text-xs mt-1 tracking-wide uppercase">The Power Behind the PTT Dealer Station</p>
@@ -26,11 +25,11 @@
         </div>
         
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            
             <div class="glass-card flex flex-col gap-4 order-2 lg:order-1">
                 <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">Station Parameters</h2>
                 
-                <div class="p-3 bg-gray-50 rounded-xl border border-gray-100" id="slider_container">
+                <!-- กล่องแนวโน้มราคาน้ำมัน (เพิ่ม id="price_box" เพื่อควบคุมสี) -->
+                <div class="p-3 rounded-xl border border-gray-100 transition-colors duration-500" id="price_box">
                     <div class="flex justify-between items-center mb-1">
                         <label class="text-xs font-bold text-gray-600">แนวโน้มการปรับราคาน้ำมัน</label>
                         <span class="text-sm font-bold" id="drop_val_display">0.00 ฿/L</span>
@@ -52,205 +51,104 @@
                     <input type="number" id="input_daily" value="15000" class="input-minimal" oninput="calculate()">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">3. พื้นที่ว่างในถังใต้ดิน (ลิตร)</label>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">3. ปริมาณสั่งซื้อเพื่อทำกำไร (ลิตร)</label>
                     <input type="number" id="input_ullage" value="180000" class="input-minimal" oninput="calculate()">
+                    <div id="suggestion_box" class="mt-3 p-3 rounded-lg border text-[11px] font-medium hidden">
+                        <p id="suggestion_text"></p>
+                    </div>
                 </div>
             </div>
 
             <div class="glass-card lg:col-span-2 flex flex-col order-1 lg:order-2">
                 <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2 mb-4">CVP Profitability Evaluation</h2>
+                <div id="warning_box" class="hidden p-3 mb-4 rounded-lg text-[11px] font-medium border"></div>
                 
-                <div id="warning_box" class="hidden p-3 mb-4 rounded-lg text-[11px] font-medium border animate-pulse"></div>
-
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
                     <div class="p-3 rounded-xl border transition-colors duration-200" id="card_be">
                         <p class="text-[11px] font-medium mb-0.5" id="label_be_card">จุดเริ่มคุ้มทุน</p>
                         <h3 class="text-xl font-bold" id="out_be_days">7.1 <span class="text-xs font-normal">วัน</span></h3>
                         <p class="text-[11px] opacity-80" id="out_be_liters">≈ 106,000 ลิตร</p>
                     </div>
-                    
                     <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
                         <p class="text-[11px] text-blue-600 font-medium mb-0.5">ปริมาณสั่งซื้อที่เหมาะสม</p>
                         <h3 class="text-xl font-bold text-blue-700" id="out_opt_days">12.0 <span class="text-xs font-normal">วัน</span></h3>
                         <p class="text-[11px] text-blue-600 opacity-80" id="out_opt_liters">≈ 180,000 ลิตร</p>
                     </div>
-
-                    <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100 relative overflow-hidden">
-                        <div class="absolute top-0 right-0 bg-emerald-500 text-white text-[8px] px-1.5 py-0.5 rounded-bl-lg font-bold">EST. NET</div>
-                        <p class="text-[11px] text-emerald-700 font-medium mb-0.5">ผลประโยชน์สุทธิคาดหวัง</p>
+                    <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100 relative overflow-hidden transition-colors duration-500" id="card_profit_container">
+                        <div class="absolute top-0 right-0 bg-emerald-500 text-white text-[8px] px-1.5 py-0.5 rounded-bl-lg font-bold" id="badge_net">EST. NET</div>
+                        <p class="text-[11px] text-emerald-700 font-medium mb-0.5" id="label_profit_main">ผลประโยชน์สุทธิคาดหวัง</p>
                         <h3 class="text-xl font-bold text-emerald-600" id="out_max_profit">+ 92,500 <span class="text-xs font-normal">บาท</span></h3>
-                        <p class="text-[10px] text-emerald-600 opacity-75" id="label_profit_sub">รวมผลกระทบราคาแล้ว</p>
                     </div>
                 </div>
-
-                <div class="relative w-full h-64 sm:h-72 lg:h-80">
-                    <canvas id="optChart"></canvas>
-                </div>
+                <div class="relative w-full h-64 sm:h-72 lg:h-80"><canvas id="optChart"></canvas></div>
             </div>
         </div>
     </div>
 
     <script>
         let chartInstance = null;
-
         function calculate() {
             const sales24 = parseFloat(document.getElementById('input_sales24').value) || 0;
             const avgDaily = parseFloat(document.getElementById('input_daily').value) || 1;
             const ullage = parseFloat(document.getElementById('input_ullage').value) || 0; 
             const priceChange = parseFloat(document.getElementById('input_drop').value) || 0;
+            const baseQty = (sales24 / 24) * 6;
 
-            // ตรรกะ Warning Message
+            // ปรับสีกล่องแนวโน้มราคา
+            const priceBox = document.getElementById('price_box');
+            if (priceChange > 0) priceBox.className = "p-3 rounded-xl border transition-colors duration-500 bg-emerald-50 border-emerald-100";
+            else if (priceChange < 0) priceBox.className = "p-3 rounded-xl border transition-colors duration-500 bg-rose-50 border-rose-100";
+            else priceBox.className = "p-3 rounded-xl border transition-colors duration-500 bg-gray-50 border-gray-100";
+
+            // Warning & Suggestion Logic (เดิม)
             const warningBox = document.getElementById('warning_box');
             let warnings = [];
-            if (ullage < (sales24 / 24) * 6) warnings.push("พื้นที่ถังต่ำกว่ายอดฐานโครงการ");
-            if (priceChange < -2) warnings.push("ราคาน้ำมันลดลงแรง ความเสี่ยงสูง");
+            if (ullage < baseQty) warnings.push("พื้นที่ถังต่ำกว่ายอดฐานโครงการ");
+            if (priceChange < -2) warnings.push("ราคาน้ำมันลงแรง ความเสี่ยงสูง");
+            warningBox.className = warnings.length ? "p-3 mb-4 rounded-lg text-[11px] font-medium border block " + (priceChange < -2 ? "bg-red-50 border-red-200 text-red-700" : "bg-amber-50 border-amber-200 text-amber-700") : "hidden";
+            warningBox.innerText = warnings.join(" | ");
 
-            if(warnings.length > 0) {
-                warningBox.className = "p-3 mb-4 rounded-lg text-[11px] font-medium border block " + (priceChange < -2 ? "bg-red-50 border-red-200 text-red-700" : "bg-amber-50 border-amber-200 text-amber-700");
-                warningBox.innerText = warnings.join(" | ");
-            } else {
-                warningBox.className = "hidden";
-            }
+            const suggestBox = document.getElementById('suggestion_box');
+            suggestBox.className = ullage < baseQty ? "mt-3 p-3 rounded-lg border bg-amber-50 border-amber-100 text-amber-700 text-[11px] font-medium" : "mt-3 p-3 rounded-lg border bg-emerald-50 border-emerald-100 text-emerald-700 text-[11px] font-medium";
+            document.getElementById('suggestion_text').innerText = ullage < baseQty ? `แนะนำ: สั่งเพิ่มอีก ${Math.round(baseQty - ullage).toLocaleString()} ลิตร เพื่อเริ่มรับส่วนลด 2 บาท/ลิตร` : `สถานะ: อยู่ในเกณฑ์ส่วนลด 2 บาท/ลิตร`;
 
             const displayEl = document.getElementById('drop_val_display');
-            const sliderEl = document.getElementById('input_drop');
+            displayEl.innerText = (priceChange >= 0 ? "+" : "") + priceChange.toFixed(2) + " ฿/L";
             
-            if (priceChange > 0) {
-                displayEl.innerText = "+" + priceChange.toFixed(2) + " ฿/L";
-                displayEl.className = "text-sm font-bold text-emerald-600";
-                sliderEl.style.backgroundColor = "#34d399";
-            } else if (priceChange < 0) {
-                displayEl.innerText = priceChange.toFixed(2) + " ฿/L";
-                displayEl.className = "text-sm font-bold text-rose-500";
-                sliderEl.style.backgroundColor = "#f87171";
-            } else {
-                displayEl.innerText = "0.00 ฿/L";
-                displayEl.className = "text-sm font-bold text-gray-500";
-                sliderEl.style.backgroundColor = "#e5e7eb";
-            }
-
-            const baseQty = (sales24 / 24) * 6;
-            const sales6Days = avgDaily * 6;
-            const maxDays = ullage / avgDaily;
-
-            let netImpactPerLiter = 0;
-            let totalProfitMax = 0;
-            let d_be_real = 0;
-            let v_be_real = 0;
-
-            const cardBeEl = document.getElementById('card_be');
-            const labelBeCardEl = document.getElementById('label_be_card');
-
-            if (priceChange >= 0) {
-                netImpactPerLiter = priceChange; 
-                v_be_real = baseQty;
-                d_be_real = baseQty / avgDaily;
-                
-                cardBeEl.className = "p-3 bg-blue-50 rounded-xl border border-blue-100";
-                labelBeCardEl.className = "text-[11px] text-blue-600 font-medium mb-0.5";
-                labelBeCardEl.innerText = "จุดเริ่มเร่งกำไร (Base)";
-
-                let rebateMax = ullage > baseQty ? 2 * (ullage - baseQty) : 0;
-                let stockGainMax = netImpactPerLiter * Math.max(0, ullage - sales6Days);
-                totalProfitMax = rebateMax + stockGainMax;
-                
-                document.getElementById('label_profit_sub').innerText = "รวมกำไรจาก Stock ขาขึ้นแล้ว";
-            } else {
-                const positiveDrop = Math.abs(priceChange);
-                netImpactPerLiter = 0.5 * positiveDrop; 
-                const denom = 2 - netImpactPerLiter;
-
-                if (denom > 0) {
-                    v_be_real = (2 * baseQty - netImpactPerLiter * sales6Days) / denom;
-                    v_be_real = Math.max(0, v_be_real);
-                    d_be_real = v_be_real / avgDaily;
-                }
-
-                cardBeEl.className = "p-3 bg-rose-50 rounded-xl border border-rose-100";
-                labelBeCardEl.className = "text-[11px] text-rose-600 font-medium mb-0.5";
-                labelBeCardEl.innerText = "จุดเริ่มคุ้มทุนหน้าลาน";
-
-                let rebateMax = ullage > baseQty ? 2 * (ullage - baseQty) : 0;
-                let lossMax = netImpactPerLiter * Math.max(0, ullage - sales6Days);
-                totalProfitMax = rebateMax - lossMax;
-                
-                document.getElementById('label_profit_sub').innerText = "หักลบความเสี่ยงราคาลงแล้ว";
-            }
-
-            document.getElementById('out_be_days').innerHTML = `${d_be_real.toFixed(1)} <span class="text-xs font-normal">วัน</span>`;
-            document.getElementById('out_be_liters').innerText = `≈ ${Math.round(v_be_real).toLocaleString()} ลิตร`;
+            const totalProfitMax = (ullage > baseQty ? 2 * (ullage - baseQty) : 0) + (priceChange * Math.max(0, ullage - (avgDaily * 6)));
+            const isProfitable = totalProfitMax >= 0;
             
-            document.getElementById('out_opt_days').innerHTML = `${maxDays.toFixed(1)} <span class="text-xs font-normal">วัน</span>`;
-            document.getElementById('out_opt_liters').innerText = `≈ ${Math.round(ullage).toLocaleString()} ลิตร`;
+            const profitCard = document.getElementById('card_profit_container');
+            profitCard.className = `p-3 rounded-xl border relative overflow-hidden transition-colors duration-500 ${isProfitable ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`;
+            document.getElementById('badge_net').className = `absolute top-0 right-0 text-white text-[8px] px-1.5 py-0.5 rounded-bl-lg font-bold ${isProfitable ? 'bg-emerald-500' : 'bg-rose-500'}`;
+            document.getElementById('out_max_profit').className = `text-xl font-bold ${isProfitable ? 'text-emerald-600' : 'text-rose-600'}`;
+            document.getElementById('label_profit_main').className = `text-[11px] font-medium mb-0.5 ${isProfitable ? 'text-emerald-700' : 'text-rose-700'}`;
+            document.getElementById('out_max_profit').innerHTML = `${isProfitable ? '+' : '-'} ${Math.abs(Math.round(totalProfitMax)).toLocaleString()} <span class="text-xs font-normal">บาท</span>`;
 
-            const profitText = totalProfitMax >= 0 ? `+ ${Math.round(totalProfitMax).toLocaleString()}` : `- ${Math.abs(Math.round(totalProfitMax)).toLocaleString()}`;
-            const profitColor = totalProfitMax >= 0 ? 'text-emerald-600' : 'text-rose-600';
-            const profitEl = document.getElementById('out_max_profit');
-            profitEl.innerHTML = `${profitText} <span class="text-xs font-normal">บาท</span>`;
-            profitEl.className = `text-xl font-bold ${profitColor}`;
-
-            updateChart(avgDaily, maxDays, baseQty, sales6Days, priceChange);
+            updateChart(avgDaily, ullage / avgDaily, baseQty, avgDaily * 6, priceChange, isProfitable);
         }
 
-        function updateChart(avgDaily, maxDays, baseQty, sales6Days, priceChange) {
+        function updateChart(avgDaily, maxDays, baseQty, sales6Days, priceChange, isProfitable) {
             const ctx = document.getElementById('optChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
-
-            const plotMaxDays = maxDays + 1;
-            const steps = window.innerWidth < 640 ? 20 : 40; 
-            let daysData = [];
-            let profitData = [];
-
-            for (let i = 0; i <= steps; i++) {
-                let d = (i / steps) * plotMaxDays;
+            let dData=[], pData=[];
+            for(let i=0; i<=40; i++) {
+                let d = (i/40) * (maxDays + 2);
                 let vol = d * avgDaily;
-                
                 let rebate = vol > baseQty ? 2 * (vol - baseQty) : 0;
-                let netProfit = 0;
-
-                if (priceChange >= 0) {
-                    let stockGain = priceChange * Math.max(0, vol - sales6Days);
-                    netProfit = rebate + stockGain;
-                } else {
-                    let netLossPerLiter = 0.5 * Math.abs(priceChange);
-                    let loss = netLossPerLiter * Math.max(0, vol - sales6Days);
-                    netProfit = rebate - loss;
-                }
-
-                daysData.push(d.toFixed(1));
-                profitData.push(netProfit);
+                let netProfit = rebate + (priceChange * Math.max(0, vol - sales6Days));
+                dData.push(d.toFixed(1));
+                pData.push(netProfit);
             }
-
-            const isProfitable = priceChange >= 0;
-
-            chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: daysData,
-                    datasets: [{
-                        label: 'ผลประโยชน์สุทธิ',
-                        data: profitData,
-                        borderColor: isProfitable ? '#10b981' : '#f43f5e',
-                        backgroundColor: isProfitable ? 'rgba(16, 185, 129, 0.04)' : 'rgba(244, 63, 94, 0.04)',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        fill: true,
-                        tension: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { title: { display: true, text: 'ยอดสั่งซื้อครอบคลุม (วัน)', color: '#9ca3af', font: {size: 10} }, grid: { display: false } },
-                        y: { grid: { color: (ctx) => ctx.tick.value === 0 ? '#d1d5db' : '#f3f4f6' }, border: { dash: [4, 4] }, ticks: { font: { size: 10 } } }
-                    }
-                }
+            chartInstance = new Chart(ctx, { 
+                type: 'line', 
+                data: { labels: dData, datasets: [{ data: pData, borderColor: isProfitable ? '#10b981' : '#f43f5e', tension: 0, pointRadius: 0, fill: true, backgroundColor: isProfitable ? 'rgba(16, 185, 129, 0.05)' : 'rgba(244, 63, 94, 0.05)' }] }, 
+                options: { 
+                    responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } 
+                } 
             });
         }
-
         window.onload = calculate;
     </script>
 </body>
