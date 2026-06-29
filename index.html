@@ -24,7 +24,7 @@
             <div class="h-1 w-16 bg-blue-500 mx-auto mt-3 rounded-full"></div>
         </div>
         
-        <div class="grid grid-grid-cols-1 lg:grid-cols-3 gap-5">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <div class="glass-card flex flex-col gap-4 order-2 lg:order-1">
                 <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">Station Parameters</h2>
                 
@@ -57,7 +57,7 @@
                     </div>
                 </div>
                 <div class="mt-2 text-right">
-                    <p class="text-[9px] text-gray-400 font-mono" id="last_update"></p>
+                    <p class="text-[9px] text-gray-400 font-mono">UPDATED VERSION: 29/06/2026, 20:06:30</p>
                 </div>
             </div>
 
@@ -95,7 +95,6 @@
     </div>
 
     <script>
-        document.getElementById('last_update').innerText = "VERSION: " + new Date().toLocaleString('th-TH');
         let chartInstance = null;
         function calculate(isAuto = false) {
             const avgDaily = parseFloat(document.getElementById('input_daily').value) || 1;
