@@ -24,7 +24,7 @@
             <div class="h-1 w-16 bg-blue-500 mx-auto mt-3 rounded-full"></div>
         </div>
         
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div class="grid grid-grid-cols-1 lg:grid-cols-3 gap-5">
             <div class="glass-card flex flex-col gap-4 order-2 lg:order-1">
                 <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">Station Parameters</h2>
                 
@@ -56,6 +56,9 @@
                         <p id="suggestion_text"></p>
                     </div>
                 </div>
+                <div class="mt-2 text-right">
+                    <p class="text-[9px] text-gray-400 font-mono" id="last_update"></p>
+                </div>
             </div>
 
             <div class="glass-card lg:col-span-2 flex flex-col order-1 lg:order-2">
@@ -65,18 +68,18 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
                     <div class="p-3 rounded-xl border transition-colors duration-200" id="card_be">
                         <p class="text-[11px] font-medium mb-0.5" id="label_be_card">จุดเริ่มคุ้มทุน</p>
-                        <h3 class="text-xl font-bold" id="out_be_days">7.1 <span class="text-xs font-normal">วัน</span></h3>
-                        <p class="text-[11px] opacity-80" id="out_be_liters">≈ 106,000 ลิตร</p>
+                        <h3 class="text-xl font-bold" id="out_be_days">0.0 <span class="text-xs font-normal">วัน</span></h3>
+                        <p class="text-[11px] opacity-80" id="out_be_liters">≈ 0 ลิตร</p>
                     </div>
                     <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
                         <p class="text-[11px] text-blue-600 font-medium mb-0.5">สต็อกน้ำมันรองรับได้อีก</p>
-                        <h3 class="text-xl font-bold text-blue-700" id="out_opt_days">12.0 <span class="text-xs font-normal">วัน</span></h3>
-                        <p class="text-[11px] text-blue-600 opacity-80" id="out_opt_liters">≈ 180,000 ลิตร</p>
+                        <h3 class="text-xl font-bold text-blue-700" id="out_opt_days">0.0 <span class="text-xs font-normal">วัน</span></h3>
+                        <p class="text-[11px] text-blue-600 opacity-80" id="out_opt_liters">≈ 0 ลิตร</p>
                     </div>
                     <div class="p-3 rounded-xl border relative overflow-hidden transition-colors duration-500" id="card_profit_container">
                         <div class="absolute top-0 right-0 text-white text-[8px] px-1.5 py-0.5 rounded-bl-lg font-bold" id="badge_net">EST. NET</div>
                         <p class="text-[11px] font-medium mb-0.5" id="label_profit_main">ผลประโยชน์สุทธิคาดหวัง</p>
-                        <h3 class="text-xl font-bold" id="out_max_profit">+ 92,500 <span class="text-xs font-normal">บาท</span></h3>
+                        <h3 class="text-xl font-bold" id="out_max_profit">+ 0 <span class="text-xs font-normal">บาท</span></h3>
                     </div>
                 </div>
                 <div class="relative w-full h-64 sm:h-72 lg:h-80"><canvas id="optChart"></canvas></div>
@@ -92,24 +95,19 @@
     </div>
 
     <script>
+        document.getElementById('last_update').innerText = "VERSION: " + new Date().toLocaleString('th-TH');
         let chartInstance = null;
         function calculate(isAuto = false) {
-            const inputDaily = document.getElementById('input_daily');
-            const inputSales24 = document.getElementById('input_sales24');
-            const inputUllage = document.getElementById('input_ullage');
-            
-            const avgDaily = parseFloat(inputDaily.value) || 1;
-            
-            // อัปเดตตามค่าเฉลี่ยรายวันเฉพาะเมื่อเรียกจาก inputDaily
-            if(isAuto) {
-                inputSales24.value = Math.round(avgDaily * 24);
-                inputUllage.value = Math.round(avgDaily * 6);
-            }
-            
-            const sales24 = parseFloat(inputSales24.value) || 0;
-            const ullage = parseFloat(inputUllage.value) || 0; 
+            const avgDaily = parseFloat(document.getElementById('input_daily').value) || 1;
+            const sales24 = parseFloat(document.getElementById('input_sales24').value) || 0;
+            const ullage = parseFloat(document.getElementById('input_ullage').value) || 0; 
             const priceChange = parseFloat(document.getElementById('input_drop').value) || 0;
             const baseQty = (sales24 / 24) * 6;
+
+            if(isAuto) {
+                document.getElementById('input_sales24').value = Math.round(avgDaily * 24);
+                document.getElementById('input_ullage').value = Math.round(avgDaily * 6);
+            }
 
             let d_be_real = priceChange >= 0 ? (baseQty / avgDaily) : ((2 * baseQty) / ((2 + (0.5 * Math.abs(priceChange))) * avgDaily));
             let v_be_real = d_be_real * avgDaily;
@@ -169,7 +167,7 @@
                 } 
             });
         }
-        window.onload = calculate;
+        window.onload = function() { calculate(); };
     </script>
 </body>
 </html>
