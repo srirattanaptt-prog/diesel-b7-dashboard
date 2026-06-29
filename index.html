@@ -69,7 +69,7 @@
                         <p class="text-[11px] opacity-80" id="out_be_liters">≈ 106,000 ลิตร</p>
                     </div>
                     <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
-                        <p class="text-[11px] text-blue-600 font-medium mb-0.5">ปริมาณสั่งซื้อที่เหมาะสม</p>
+                        <p class="text-[11px] text-blue-600 font-medium mb-0.5">สต็อกน้ำมันรองรับได้อีก</p>
                         <h3 class="text-xl font-bold text-blue-700" id="out_opt_days">12.0 <span class="text-xs font-normal">วัน</span></h3>
                         <p class="text-[11px] text-blue-600 opacity-80" id="out_opt_liters">≈ 180,000 ลิตร</p>
                     </div>
@@ -100,6 +100,11 @@
             const priceChange = parseFloat(document.getElementById('input_drop').value) || 0;
             const baseQty = (sales24 / 24) * 6;
 
+            // แก้ไขการคำนวณวันรองรับสต็อก
+            const daysRemaining = ullage / avgDaily;
+            document.getElementById('out_opt_days').innerHTML = `${daysRemaining.toFixed(1)} <span class="text-xs font-normal">วัน</span>`;
+            document.getElementById('out_opt_liters').innerText = `≈ ${Math.round(ullage).toLocaleString()} ลิตร`;
+
             const priceBox = document.getElementById('price_box');
             priceBox.className = "p-3 rounded-xl border transition-colors duration-500 " + (priceChange > 0 ? "bg-emerald-50 border-emerald-100" : (priceChange < 0 ? "bg-rose-50 border-rose-100" : "bg-gray-50 border-gray-100"));
             document.getElementById('input_drop').className = "w-full h-1.5 rounded-lg appearance-none cursor-pointer " + (priceChange > 0 ? "bg-emerald-500" : (priceChange < 0 ? "bg-rose-500" : "bg-gray-300"));
@@ -127,7 +132,7 @@
             document.getElementById('out_max_profit').innerHTML = `${isProfitable ? '+' : '-'} ${Math.abs(Math.round(totalProfitMax)).toLocaleString()} <span class="text-xs font-normal">บาท</span>`;
 
             document.getElementById('drop_val_display').innerText = (priceChange >= 0 ? "+" : "") + priceChange.toFixed(2) + " ฿/L";
-            updateChart(avgDaily, ullage / avgDaily, baseQty, avgDaily * 6, priceChange, isProfitable);
+            updateChart(avgDaily, daysRemaining, baseQty, avgDaily * 6, priceChange, isProfitable);
         }
 
         function updateChart(avgDaily, maxDays, baseQty, sales6Days, priceChange, isProfitable) {
