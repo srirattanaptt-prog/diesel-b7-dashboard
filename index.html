@@ -100,7 +100,12 @@
             const priceChange = parseFloat(document.getElementById('input_drop').value) || 0;
             const baseQty = (sales24 / 24) * 6;
 
-            // แก้ไขการคำนวณวันรองรับสต็อก
+            // แก้ไขจุดเริ่มคุ้มทุนให้แปรผันตามราคา
+            let d_be_real = priceChange >= 0 ? (baseQty / avgDaily) : ((2 * baseQty) / ((2 + (0.5 * Math.abs(priceChange))) * avgDaily));
+            let v_be_real = d_be_real * avgDaily;
+            document.getElementById('out_be_days').innerHTML = `${d_be_real.toFixed(1)} <span class="text-xs font-normal">วัน</span>`;
+            document.getElementById('out_be_liters').innerText = `≈ ${Math.round(v_be_real).toLocaleString()} ลิตร`;
+
             const daysRemaining = ullage / avgDaily;
             document.getElementById('out_opt_days').innerHTML = `${daysRemaining.toFixed(1)} <span class="text-xs font-normal">วัน</span>`;
             document.getElementById('out_opt_liters').innerText = `≈ ${Math.round(ullage).toLocaleString()} ลิตร`;
