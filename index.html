@@ -57,7 +57,7 @@
                     </div>
                 </div>
                 <div class="mt-2 text-right">
-                    <p class="text-[9px] text-gray-400 font-mono">UPDATED VERSION: 30/06/2026, 14:50:00</p>
+                    <p class="text-[9px] text-gray-400 font-mono">UPDATED VERSION: 30/06/2026, 18:07:20</p>
                 </div>
             </div>
 
@@ -103,24 +103,23 @@
             const sales24 = parseFloat(document.getElementById('input_sales24').value) || 0;
             const ullage = parseFloat(document.getElementById('input_ullage').value) || 0;
             const priceChange = parseFloat(document.getElementById('input_drop').value) || 0;
+            
             const baseQty = (sales24 / 24) * 6;
             
-            // ปรับสูตรวันที่คุ้มทุนให้แปรผันตามราคา: ถ้าราคาลง ต้องรีบคืนทุนก่อนน้ำมันลดมูลค่า
-            // สมการ: ถ้าราคาลงลบ 1 บาท/ลิตร ให้เร่งวันคืนทุนขึ้น 0.3 วัน
-            let priceImpactOnDays = priceChange < 0 ? Math.abs(priceChange) * 0.3 : 0;
-            let d_be_real = Math.max(0.1, (baseQty / avgDaily) - priceImpactOnDays);
-            const daysRemaining = ullage / avgDaily;
+            // ปรับแก้สมการ: ผูก "แนวโน้มราคาน้ำมัน" เข้ากับ "จุดเริ่มคุ้มทุน" โดยตรง
+            // ถ้าราคาปรับลดลง (priceChange < 0) วันเริ่มคุ้มทุนจะลดต่ำลงตามสัดส่วนความเสี่ยงจริง ไม่ค้างที่ 6 วัน
+            let priceRiskMitigation = priceChange < 0 ? Math.abs(priceChange) * 1.25 : 0;
+            let d_be_real = Math.max(0.5, ((sales24 / 24) * 6) / avgDaily - priceRiskMitigation);
+            let daysRemaining = ullage / avgDaily;
             
             document.getElementById('out_be_days').innerHTML = `${d_be_real.toFixed(1)} <span class="text-xs font-normal">วัน</span>`;
             document.getElementById('out_be_liters').innerText = `≈ ${Math.round(d_be_real * avgDaily).toLocaleString()} ลิตร`;
             document.getElementById('out_opt_days').innerHTML = `${daysRemaining.toFixed(1)} <span class="text-xs font-normal">วัน</span>`;
             document.getElementById('out_opt_liters').innerText = `≈ ${Math.round(ullage).toLocaleString()} ลิตร`;
 
-            // ปรับสูตรกำไร: OR ช่วยหารครึ่ง (0.5) เมื่อราคาลง
-            const adjustmentFactor = priceChange < 0 ? 0.5 : 1.0;
+            const compensationFactor = priceChange < 0 ? 0.5 : 1.0;
             const rebateProfit = (ullage > baseQty) ? (2 * (ullage - baseQty)) : 0;
-            const inventoryGainLoss = (priceChange * ullage) * adjustmentFactor;
-            const totalProfitMax = rebateProfit + inventoryGainLoss;
+            const totalProfitMax = rebateProfit + ((priceChange * ullage) * compensationFactor);
             
             const isProfitable = totalProfitMax >= 0;
             document.getElementById('out_max_profit').innerHTML = `${isProfitable ? '+' : '-'} ${Math.abs(Math.round(totalProfitMax)).toLocaleString()} <span class="text-xs font-normal">บาท</span>`;
@@ -129,7 +128,6 @@
             document.getElementById('badge_net').className = `absolute top-0 right-0 text-white text-[8px] px-1.5 py-0.5 rounded-bl-lg font-bold ${isProfitable ? 'bg-emerald-500' : 'bg-rose-500'}`;
             document.getElementById('label_profit_main').className = `text-[11px] font-medium mb-0.5 ${isProfitable ? 'text-emerald-700' : 'text-rose-700'}`;
 
-            // Sync Logic
             const sb = document.getElementById('suggestion_box');
             if (triggeredByDaily && avgDaily !== lastDaily) {
                 sb.classList.remove('hidden');
@@ -139,7 +137,7 @@
                     document.getElementById('input_sales24').value = Math.round(avgDaily * 24);
                     document.getElementById('input_ullage').value = Math.round(avgDaily * 6);
                     lastDaily = avgDaily;
-                    calculate();
+                    calculate(); 
                 };
             } else {
                 sb.classList.remove('hidden');
@@ -164,7 +162,6 @@
                 let d = (i/40) * (maxDays + 2);
                 let remainingStock = Math.max(0, ullage - (d * avgDaily));
                 let vol = d * avgDaily;
-                // อิงสมการชดเชยครึ่งหนึ่ง (priceChange * remainingStock * factor)
                 let netProfit = (vol > baseQty ? 2*(vol-baseQty) : 0) + ((priceChange * remainingStock) * (priceChange < 0 ? 0.5 : 1.0));
                 dData.push(d.toFixed(1)); pData.push(netProfit);
             }
