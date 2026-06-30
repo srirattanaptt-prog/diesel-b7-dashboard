@@ -57,7 +57,7 @@
                     </div>
                 </div>
                 <div class="mt-2 text-right">
-                    <p class="text-[9px] text-gray-400 font-mono">UPDATED VERSION: 29/06/2026, 20:28:35</p>
+                    <p class="text-[9px] text-gray-400 font-mono">UPDATED VERSION: 30/06/2026, 11:41:00</p>
                 </div>
             </div>
 
@@ -97,16 +97,20 @@
     <script>
         let chartInstance = null;
         function calculate(isAuto = false) {
-            const avgDaily = parseFloat(document.getElementById('input_daily').value) || 1;
-            const sales24 = parseFloat(document.getElementById('input_sales24').value) || 0;
-            const ullage = parseFloat(document.getElementById('input_ullage').value) || 0; 
+            const inputDaily = document.getElementById('input_daily');
+            const inputSales24 = document.getElementById('input_sales24');
+            const inputUllage = document.getElementById('input_ullage');
+            const avgDaily = parseFloat(inputDaily.value) || 1;
+            
+            if(isAuto) {
+                inputSales24.value = Math.round(avgDaily * 24);
+                inputUllage.value = Math.round(avgDaily * 6);
+            }
+
+            const sales24 = parseFloat(inputSales24.value) || 0;
+            const ullage = parseFloat(inputUllage.value) || 0; 
             const priceChange = parseFloat(document.getElementById('input_drop').value) || 0;
             const baseQty = (sales24 / 24) * 6;
-
-            if(isAuto) {
-                document.getElementById('input_sales24').value = Math.round(avgDaily * 24);
-                document.getElementById('input_ullage').value = Math.round(avgDaily * 6);
-            }
 
             let d_be_real = priceChange >= 0 ? (baseQty / avgDaily) : ((2 * baseQty) / ((2 + (0.5 * Math.abs(priceChange))) * avgDaily));
             let v_be_real = d_be_real * avgDaily;
