@@ -28,118 +28,13 @@
             <div class="glass-card flex flex-col gap-4 order-2 lg:order-1">
                 <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">Station Parameters</h2>
                 
-                <div class="p-3 rounded-xl border transition-colors duration-500 bg-gray-50 border-gray-100" id="price_box">
+                <div class="p-3 rounded-xl border transition-colors duration-500 border-gray-100" id="price_box">
                     <div class="flex justify-between items-center mb-1">
                         <label class="text-xs font-bold text-gray-600">แนวโน้มการปรับราคาน้ำมัน</label>
                         <span class="text-sm font-bold" id="drop_val_display">0.00 ฿/L</span>
                     </div>
                     <input type="range" id="input_drop" min="-5.00" max="5.00" step="0.10" value="0.00" class="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-300" oninput="calculate()">
                     <div class="flex justify-between text-[9px] text-gray-400 mt-1">
-                        <span class="text-rose-500 font-medium">ราคาลดลง (-5.00)</span>
-                        <span>0.00</span>
-                        <span class="text-emerald-600 font-medium">ราคาเพิ่มขึ้น (+5.00)</span>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">1. ยอดขายเฉลี่ยต่อวัน (ลิตร)</label>
-                    <input type="number" id="input_daily" value="12000" step="1000" class="input-minimal" oninput="calculate()">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">2. ยอดสั่งซื้อสะสม 1-24 มิ.ย. (ลิตร)</label>
-                    <input type="number" id="input_sales24" value="288000" step="1000" class="input-minimal" oninput="calculate()">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">3. ปริมาณสั่งซื้อเพื่อทำกำไร 25-30 มิ.ย. (ลิตร)</label>
-                    <input type="number" id="input_ullage" value="72000" step="1000" class="input-minimal" oninput="calculate()">
-                </div>
-                <div class="mt-2 text-right">
-                    <p class="text-[9px] text-gray-400 font-mono">UPDATED VERSION: 30/06/2026, 12:25:00</p>
-                </div>
-            </div>
-
-            <div class="glass-card lg:col-span-2 flex flex-col order-1 lg:order-2">
-                <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2 mb-4">CVP Profitability Evaluation</h2>
-                <div id="warning_box" class="hidden p-3 mb-4 rounded-lg text-[11px] font-medium border"></div>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-                    <div class="p-3 rounded-xl border transition-colors duration-200" id="card_be">
-                        <p class="text-[11px] font-medium mb-0.5" id="label_be_card">จุดเริ่มคุ้มทุน (ฐานโครงการ)</p>
-                        <h3 class="text-xl font-bold" id="out_be_days">0.0 <span class="text-xs font-normal">วัน</span></h3>
-                        <p class="text-[11px] opacity-80" id="out_be_liters">≈ 0 ลิตร</p>
-                    </div>
-                    <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
-                        <p class="text-[11px] text-blue-600 font-medium mb-0.5">สต็อกน้ำมันรองรับได้จริง</p>
-                        <h3 class="text-xl font-bold text-blue-700" id="out_opt_days">0.0 <span class="text-xs font-normal">วัน</span></h3>
-                        <p class="text-[11px] text-blue-600 opacity-80" id="out_opt_liters">≈ 0 ลิตร</p>
-                    </div>
-                    <div class="p-3 rounded-xl border relative overflow-hidden transition-colors duration-500" id="card_profit_container">
-                        <div class="absolute top-0 right-0 text-white text-[8px] px-1.5 py-0.5 rounded-bl-lg font-bold" id="badge_net">EST. NET</div>
-                        <p class="text-[11px] font-medium mb-0.5" id="label_profit_main">ผลประโยชน์สุทธิคาดหวัง</p>
-                        <h3 class="text-xl font-bold" id="out_max_profit">+ 0 <span class="text-xs font-normal">บาท</span></h3>
-                    </div>
-                </div>
-                <div class="relative w-full h-64 sm:h-72 lg:h-80"><canvas id="optChart"></canvas></div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let chartInstance = null;
-        function calculate() {
-            const avgDaily = parseFloat(document.getElementById('input_daily').value) || 1;
-            const sales24 = parseFloat(document.getElementById('input_sales24').value) || 0;
-            const ullage = parseFloat(document.getElementById('input_ullage').value) || 0; 
-            const priceChange = parseFloat(document.getElementById('input_drop').value) || 0;
-            
-            const baseQty = (sales24 / 24) * 6;
-            
-            // ปรับสูตรวันคุ้มทุนให้แปรผันตาม priceChange (ถ้าติดลบมาก วันจะยิ่งสั้นลงเพื่อรีบระบายน้ำมัน)
-            const priceImpactFactor = 1 + (priceChange * 0.05); // ปรับแรงกดดันจากราคา
-            const d_be_real = (baseQty / avgDaily) * priceImpactFactor;
-            const realStockDays = (ullage / avgDaily) * priceImpactFactor;
-
-            document.getElementById('out_be_days').innerHTML = `${d_be_real.toFixed(1)} <span class="text-xs font-normal">วัน</span>`;
-            document.getElementById('out_be_liters').innerText = `≈ ${Math.round(baseQty).toLocaleString()} ลิตร`;
-            document.getElementById('out_opt_days').innerHTML = `${realStockDays.toFixed(1)} <span class="text-xs font-normal">วัน</span>`;
-            document.getElementById('out_opt_liters').innerText = `≈ ${Math.round(ullage).toLocaleString()} ลิตร`;
-
-            // กำไรสุทธิรวม (ส่วนลด + ความเสี่ยงราคา)
-            const rebate = (ullage > baseQty ? 2 * (ullage - baseQty) : 0);
-            const priceImpact = (priceChange * ullage); 
-            const totalProfitMax = rebate + priceImpact;
-            const isProfitable = totalProfitMax >= 0;
-
-            const priceBox = document.getElementById('price_box');
-            priceBox.className = "p-3 rounded-xl border transition-colors duration-500 " + (priceChange > 0 ? "bg-emerald-50 border-emerald-100" : (priceChange < 0 ? "bg-rose-50 border-rose-100" : "bg-gray-50 border-gray-100"));
-            document.getElementById('input_drop').className = "w-full h-1.5 rounded-lg appearance-none cursor-pointer " + (priceChange > 0 ? "bg-emerald-500" : (priceChange < 0 ? "bg-rose-500" : "bg-gray-300"));
-            document.getElementById('drop_val_display').innerText = (priceChange >= 0 ? "+" : "") + priceChange.toFixed(2) + " ฿/L";
-
-            const profitCard = document.getElementById('card_profit_container');
-            profitCard.className = `p-3 rounded-xl border relative overflow-hidden transition-colors duration-500 ${isProfitable ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`;
-            document.getElementById('badge_net').className = `absolute top-0 right-0 text-white text-[8px] px-1.5 py-0.5 rounded-bl-lg font-bold ${isProfitable ? 'bg-emerald-500' : 'bg-rose-500'}`;
-            document.getElementById('out_max_profit').className = `text-xl font-bold ${isProfitable ? 'text-emerald-600' : 'text-rose-600'}`;
-            document.getElementById('out_max_profit').innerHTML = `${isProfitable ? '+' : '-'} ${Math.abs(Math.round(totalProfitMax)).toLocaleString()} <span class="text-xs font-normal">บาท</span>`;
-
-            updateChart(avgDaily, realStockDays, baseQty, ullage, priceChange, isProfitable);
-        }
-
-        function updateChart(avgDaily, maxDays, baseQty, ullage, priceChange, isProfitable) {
-            const ctx = document.getElementById('optChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
-            let dData=[], pData=[];
-            for(let i=0; i<=40; i++) {
-                let d = (i/40) * (maxDays + 2);
-                let vol = d * avgDaily;
-                let netProfit = (vol > baseQty ? 2*(vol-baseQty) : 0) + (priceChange * vol);
-                dData.push(d.toFixed(1)); pData.push(netProfit);
-            }
-            chartInstance = new Chart(ctx, { type: 'line', data: { labels: dData, datasets: [{ data: pData, borderColor: isProfitable ? '#10b981' : '#f43f5e', tension: 0, pointRadius: 0, fill: true, backgroundColor: isProfitable ? 'rgba(16, 185, 129, 0.05)' : 'rgba(244, 63, 94, 0.05)' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } } });
-        }
-        window.onload = function() { calculate(); };
-    </script>
-</body>
-</html>                    <div class="flex justify-between text-[9px] text-gray-400 mt-1">
                         <span class="text-rose-500 font-medium">ราคาลดลง (-5.00)</span>
                         <span>0.00</span>
                         <span class="text-emerald-600 font-medium">ราคาเพิ่มขึ้น (+5.00)</span>
@@ -162,7 +57,7 @@
                     </div>
                 </div>
                 <div class="mt-2 text-right">
-                    <p class="text-[9px] text-gray-400 font-mono">UPDATED VERSION: 30/06/2026, 11:41:00</p>
+                    <p class="text-[9px] text-gray-400 font-mono">UPDATED VERSION: 30/06/2026, 14:00:00</p>
                 </div>
             </div>
 
@@ -201,34 +96,67 @@
 
     <script>
         let chartInstance = null;
-        function calculate(isAuto = false) {
+        
+        function calculate(fromDaily = false) {
+            // 1. Decoupled State: ดึงค่าดิบจากสิ่งที่ผู้ใช้พิมพ์จริงๆ ทันที
             const inputDaily = document.getElementById('input_daily');
             const inputSales24 = document.getElementById('input_sales24');
             const inputUllage = document.getElementById('input_ullage');
-            const avgDaily = parseFloat(inputDaily.value) || 1;
             
-            if(isAuto) {
-                inputSales24.value = Math.round(avgDaily * 24);
-                inputUllage.value = Math.round(avgDaily * 6);
-            }
-
+            const avgDaily = parseFloat(inputDaily.value) || 1;
             const sales24 = parseFloat(inputSales24.value) || 0;
-            const ullage = parseFloat(inputUllage.value) || 0; 
+            const ullage = parseFloat(inputUllage.value) || 0;
             const priceChange = parseFloat(document.getElementById('input_drop').value) || 0;
-            const baseQty = (sales24 / 24) * 6;
 
-            let d_be_real = priceChange >= 0 ? (baseQty / avgDaily) : ((2 * baseQty) / ((2 + (0.5 * Math.abs(priceChange))) * avgDaily));
+            // 2. Computed Values: คำนวณวันและฐานจากค่าผู้ใช้
+            const baseQty = (sales24 / 24) * 6;
+            
+            // ใช้สูตรเดิมคำนวณวัน
+            let d_be_real = priceChange >= 0 
+                ? (baseQty / avgDaily) 
+                : ((2 * baseQty) / ((2 + (0.5 * Math.abs(priceChange))) * avgDaily));
             let v_be_real = d_be_real * avgDaily;
+            const daysRemaining = ullage / avgDaily;
+
+            // อัปเดตตัวเลขแสดงผล (ขยับตาม DOM เสมอ)
             document.getElementById('out_be_days').innerHTML = `${d_be_real.toFixed(1)} <span class="text-xs font-normal">วัน</span>`;
             document.getElementById('out_be_liters').innerText = `≈ ${Math.round(v_be_real).toLocaleString()} ลิตร`;
-
-            const daysRemaining = ullage / avgDaily;
+            
             document.getElementById('out_opt_days').innerHTML = `${daysRemaining.toFixed(1)} <span class="text-xs font-normal">วัน</span>`;
             document.getElementById('out_opt_liters').innerText = `≈ ${Math.round(ullage).toLocaleString()} ลิตร`;
 
+            // 3. Suggestion Mode: แนะนำค่าโดยไม่เขียนทับ (No Data Override Loop)
+            const sb = document.getElementById('suggestion_box');
+            sb.classList.remove('hidden');
+            sb.onclick = null; // รีเซ็ตสถานะคลิก
+            sb.style.cursor = 'default';
+
+            const expectedSales24 = Math.round(avgDaily * 24);
+            const expectedUllage = Math.round(avgDaily * 6);
+            
+            // ตรวจสอบความสอดคล้อง หากไม่สอดคล้องให้แสดงปุ่ม Sync
+            if (sales24 !== expectedSales24 || ullage !== expectedUllage) {
+                sb.className = "mt-3 p-3 rounded-lg border text-[11px] font-medium block bg-blue-50 border-blue-200 text-blue-700 cursor-pointer hover:bg-blue-100 transition-colors";
+                sb.innerHTML = `<p id="suggestion_text">💡 <span class="font-bold">คลิกที่นี่เพื่อ Sync:</span> ปรับยอด (2) เป็น ${expectedSales24.toLocaleString()} และ (3) เป็น ${expectedUllage.toLocaleString()}</p>`;
+                
+                // ถ้ายูสเซอร์ยอมรับค่าแนะนำ ค่อยเขียนทับ
+                sb.onclick = function() {
+                    inputSales24.value = expectedSales24;
+                    inputUllage.value = expectedUllage;
+                    calculate(); // คำนวณซ้ำให้ UI รีเฟรช
+                };
+            } else {
+                // ถ้าค่าสอดคล้องกันแล้ว แสดงกล่องส่วนลดตามปกติ
+                const isLow = ullage < baseQty;
+                sb.className = "mt-3 p-3 rounded-lg border text-[11px] font-medium block " + (isLow ? "bg-amber-50 border-amber-100 text-amber-700" : "bg-emerald-50 border-emerald-100 text-emerald-700");
+                sb.innerHTML = `<p id="suggestion_text">${isLow ? `แนะนำ: สั่งเพิ่มอีก ${Math.round(baseQty - ullage).toLocaleString()} ลิตร เพื่อเริ่มรับส่วนลด 2 บาท/ลิตร` : `สถานะ: อยู่ในเกณฑ์ส่วนลด 2 บาท/ลิตร (ส่วนเกินยอดฐาน ${Math.round(ullage - baseQty).toLocaleString()} ลิตร)`}</p>`;
+            }
+
+            // 4. ส่วนแสดงผลที่เหลือ (ราคา, Warning, กำไร, กราฟ) ทำงานตามสูตรเดิมทั้งหมด
             const priceBox = document.getElementById('price_box');
             priceBox.className = "p-3 rounded-xl border transition-colors duration-500 " + (priceChange > 0 ? "bg-emerald-50 border-emerald-100" : (priceChange < 0 ? "bg-rose-50 border-rose-100" : "bg-gray-50 border-gray-100"));
             document.getElementById('input_drop').className = "w-full h-1.5 rounded-lg appearance-none cursor-pointer " + (priceChange > 0 ? "bg-emerald-500" : (priceChange < 0 ? "bg-rose-500" : "bg-gray-300"));
+            document.getElementById('drop_val_display').innerText = (priceChange >= 0 ? "+" : "") + priceChange.toFixed(2) + " ฿/L";
 
             const warningBox = document.getElementById('warning_box');
             let warnings = [];
@@ -237,12 +165,8 @@
             warningBox.className = warnings.length ? "p-3 mb-4 rounded-lg text-[11px] font-medium border block " + (priceChange < -2 ? "bg-red-50 border-red-200 text-red-700" : "bg-amber-50 border-amber-200 text-amber-700") : "hidden";
             warningBox.innerText = warnings.join(" | ");
 
-            const sb = document.getElementById('suggestion_box');
-            sb.classList.remove('hidden');
-            sb.className = "mt-3 p-3 rounded-lg border text-[11px] font-medium block " + (ullage < baseQty ? "bg-amber-50 border-amber-100 text-amber-700" : "bg-emerald-50 border-emerald-100 text-emerald-700");
-            sb.innerText = ullage < baseQty ? `แนะนำ: สั่งเพิ่มอีก ${Math.round(baseQty - ullage).toLocaleString()} ลิตร เพื่อเริ่มรับส่วนลด 2 บาท/ลิตร` : `สถานะ: อยู่ในเกณฑ์ส่วนลด 2 บาท/ลิตร (ส่วนเกินยอดฐาน ${Math.round(ullage - baseQty).toLocaleString()} ลิตร)`;
-
-            const totalProfitMax = (ullage > baseQty ? 2 * (ullage - baseQty) : 0) + (priceChange * Math.max(0, ullage - (avgDaily * 6)));
+            const sales6Days = avgDaily * 6;
+            const totalProfitMax = (ullage > baseQty ? 2 * (ullage - baseQty) : 0) + (priceChange * Math.max(0, ullage - sales6Days));
             const isProfitable = totalProfitMax >= 0;
 
             const profitCard = document.getElementById('card_profit_container');
@@ -252,8 +176,7 @@
             document.getElementById('label_profit_main').className = `text-[11px] font-medium mb-0.5 ${isProfitable ? 'text-emerald-700' : 'text-rose-700'}`;
             document.getElementById('out_max_profit').innerHTML = `${isProfitable ? '+' : '-'} ${Math.abs(Math.round(totalProfitMax)).toLocaleString()} <span class="text-xs font-normal">บาท</span>`;
 
-            document.getElementById('drop_val_display').innerText = (priceChange >= 0 ? "+" : "") + priceChange.toFixed(2) + " ฿/L";
-            updateChart(avgDaily, daysRemaining, baseQty, avgDaily * 6, priceChange, isProfitable);
+            updateChart(avgDaily, daysRemaining, baseQty, sales6Days, priceChange, isProfitable);
         }
 
         function updateChart(avgDaily, maxDays, baseQty, sales6Days, priceChange, isProfitable) {
@@ -275,6 +198,7 @@
                 } 
             });
         }
+        
         window.onload = function() { calculate(); };
     </script>
 </body>
