@@ -57,7 +57,7 @@
                     </div>
                 </div>
                 <div class="mt-2 text-right">
-                    <p class="text-[9px] text-gray-400 font-mono">UPDATED VERSION: 30/06/2026, 18:35:00</p>
+                    <p class="text-[9px] text-gray-400 font-mono">UPDATED VERSION: 30/06/2026, 18:45:00</p>
                 </div>
             </div>
 
@@ -99,18 +99,22 @@
         let lastDaily = 12000;
         
         function calculate(triggeredByDaily = false) {
-            // ปรับชื่อหัวการ์ดให้เข้าใจง่ายและตรงไปตรงมาที่สุดหน้าลาน
+            // ปรับชื่อหัวการ์ดให้อ่านง่ายตรงไปตรงมา
             document.getElementById('label_be_card').innerText = 'เป้าขายสะสมขั้นต่ำเพื่อรับส่วนลด';
+            
+            // สั่งทำสีกล่องแบบส้มพาสเทลเนื้อนุ่ม (Orange Pastel CSS Injection) ผ่านตัวสคริปต์
+            const cardBe = document.getElementById('card_be');
+            cardBe.className = "p-3 rounded-xl border border-orange-200 bg-orange-50 text-orange-800";
+            document.getElementById('label_be_card').className = "text-[11px] font-medium mb-0.5 text-orange-700";
 
             const avgDaily = parseFloat(document.getElementById('input_daily').value) || 1;
             const sales24 = parseFloat(document.getElementById('input_sales24').value) || 0;
             const ullage = parseFloat(document.getElementById('input_ullage').value) || 0;
             const priceChange = parseFloat(document.getElementById('input_drop').value) || 0;
             
-            // ปรับสูตรให้ตรงไปตรงมา: ยอดขายฐานที่แท้จริง ไม่หักลบค่าความเสี่ยงราคาให้งง
+            // สูตรคงเดิมตรงไปตรงมา ไม่สับสนค่าลบของตัวแปรราคา
             const baseQty = (sales24 / 24) * 6;
             
-            // คำนวณวันและลิตรสะสมตามความเป็นจริงของเกณฑ์ ไม่ผันผวนตาม Slider
             let d_be_real = baseQty / avgDaily;
             let daysRemaining = ullage / avgDaily;
             
@@ -119,7 +123,6 @@
             document.getElementById('out_opt_days').innerHTML = `${daysRemaining.toFixed(1)} <span class="text-xs font-normal">วัน</span>`;
             document.getElementById('out_opt_liters').innerText = `≈ ${Math.round(ullage).toLocaleString()} ลิตร`;
 
-            // ส่วนของกำไรยังคงคำนวณ Price Trend และการสนับสนุน 50% ของ OR อย่างแม่นยำเหมือนเดิม
             const compensationFactor = priceChange < 0 ? 0.5 : 1.0;
             const rebateProfit = (ullage > baseQty) ? (2 * (ullage - baseQty)) : 0;
             const totalProfitMax = rebateProfit + ((priceChange * ullage) * compensationFactor);
