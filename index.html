@@ -105,8 +105,10 @@
             const priceChange = parseFloat(document.getElementById('input_drop').value) || 0;
             const baseQty = (sales24 / 24) * 6;
             
-            // 1. วันที่ (คำนวณจากค่า Input ล่าสุดเสมอ)
-            let d_be_real = priceChange >= 0 ? (baseQty / avgDaily) : ((2 * baseQty) / ((2 + (0.5 * Math.abs(priceChange))) * avgDaily));
+            // ปรับสูตร: จุดเริ่มคุ้มทุนต้องลดลงเมื่อราคาปรับลง (เพื่อสะท้อนความเสี่ยง)
+            // ใช้ความสัมพันธ์ของราคามาหักลบวัน: ถ้าราคาลบ 1 บาท ลดวันคุ้มทุนลง 0.2 วัน
+            let sensitivityFactor = priceChange < 0 ? Math.abs(priceChange) * 0.2 : 0;
+            let d_be_real = Math.max(0.5, (baseQty / avgDaily) - sensitivityFactor);
             const daysRemaining = ullage / avgDaily;
             
             document.getElementById('out_be_days').innerHTML = `${d_be_real.toFixed(1)} <span class="text-xs font-normal">วัน</span>`;
@@ -114,18 +116,25 @@
             document.getElementById('out_opt_days').innerHTML = `${daysRemaining.toFixed(1)} <span class="text-xs font-normal">วัน</span>`;
             document.getElementById('out_opt_liters').innerText = `≈ ${Math.round(ullage).toLocaleString()} ลิตร`;
 
-            // 2. สีตามต้นฉบับ
-            const priceBox = document.getElementById('price_box');
-            priceBox.className = "p-3 rounded-xl border transition-colors duration-500 " + (priceChange > 0 ? "bg-emerald-50 border-emerald-100" : (priceChange < 0 ? "bg-rose-50 border-rose-100" : "bg-gray-50 border-gray-100"));
-            document.getElementById('input_drop').className = "w-full h-1.5 rounded-lg appearance-none cursor-pointer " + (priceChange > 0 ? "bg-emerald-500" : (priceChange < 0 ? "bg-rose-500" : "bg-gray-300"));
-            document.getElementById('drop_val_display').innerText = (priceChange >= 0 ? "+" : "") + priceChange.toFixed(2) + " ฿/L";
+            // ปรับสูตรกำไร: OR ช่วยหารครึ่ง (0.5) เมื่อราคาลง
+            const adjustmentFactor = priceChange < 0 ? 0.5 : 1.0;
+            const inventoryGainLoss = (priceChange * ullage) * adjustmentFactor;
+            const rebateProfit = (ullage > baseQty) ? (2 * (ullage - baseQty)) : 0;
+            const totalProfitMax = rebateProfit + inventoryGainLoss;
+            
+            const isProfitable = totalProfitMax >= 0;
+            document.getElementById('out_max_profit').innerHTML = `${isProfitable ? '+' : '-'} ${Math.abs(Math.round(totalProfitMax)).toLocaleString()} <span class="text-xs font-normal">บาท</span>`;
+            document.getElementById('out_max_profit').className = `text-xl font-bold ${isProfitable ? 'text-emerald-600' : 'text-rose-600'}`;
+            document.getElementById('card_profit_container').className = `p-3 rounded-xl border relative overflow-hidden transition-colors duration-500 ${isProfitable ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`;
+            document.getElementById('badge_net').className = `absolute top-0 right-0 text-white text-[8px] px-1.5 py-0.5 rounded-bl-lg font-bold ${isProfitable ? 'bg-emerald-500' : 'bg-rose-500'}`;
+            document.getElementById('label_profit_main').className = `text-[11px] font-medium mb-0.5 ${isProfitable ? 'text-emerald-700' : 'text-rose-700'}`;
 
-            // 3. Suggestion & Sync
+            // Sync Logic & Slider UI
             const sb = document.getElementById('suggestion_box');
             if (triggeredByDaily && avgDaily !== lastDaily) {
                 sb.classList.remove('hidden');
                 sb.className = "mt-3 p-3 rounded-lg border text-[11px] font-medium block bg-blue-50 border-blue-200 text-blue-700 cursor-pointer";
-                sb.innerHTML = `💡 <span class="font-bold">คลิกที่นี่เพื่อ Sync:</span> ปรับยอดเป็น ${Math.round(avgDaily * 24).toLocaleString()} / ${Math.round(avgDaily * 6).toLocaleString()}`;
+                sb.innerHTML = `💡 <span class="font-bold">คลิกที่นี่เพื่อ Sync:</span> ปรับยอดเป็น ${(avgDaily * 24).toLocaleString()} / ${(avgDaily * 6).toLocaleString()}`;
                 sb.onclick = function() {
                     document.getElementById('input_sales24').value = Math.round(avgDaily * 24);
                     document.getElementById('input_ullage').value = Math.round(avgDaily * 6);
@@ -133,34 +142,28 @@
                     calculate();
                 };
             } else {
-                const isLow = ullage < baseQty;
                 sb.classList.remove('hidden');
+                const isLow = ullage < baseQty;
                 sb.className = "mt-3 p-3 rounded-lg border text-[11px] font-medium block " + (isLow ? "bg-amber-50 border-amber-100 text-amber-700" : "bg-emerald-50 border-emerald-100 text-emerald-700");
                 sb.innerHTML = `<p>${isLow ? `แนะนำ: สั่งเพิ่มอีก ${Math.round(baseQty - ullage).toLocaleString()} ลิตร` : `สถานะ: อยู่ในเกณฑ์ส่วนลด 2 บาท/ลิตร`}</p>`;
                 sb.onclick = null;
             }
 
-            // 4. กำไรสุทธิ (สีตามต้นฉบับ)
-            const totalProfitMax = (ullage > baseQty ? 2 * (ullage - baseQty) : 0) + (priceChange * Math.max(0, ullage - (avgDaily * 6)));
-            const isProfitable = totalProfitMax >= 0;
-            const profitCard = document.getElementById('card_profit_container');
-            profitCard.className = `p-3 rounded-xl border relative overflow-hidden transition-colors duration-500 ${isProfitable ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`;
-            document.getElementById('badge_net').className = `absolute top-0 right-0 text-white text-[8px] px-1.5 py-0.5 rounded-bl-lg font-bold ${isProfitable ? 'bg-emerald-500' : 'bg-rose-500'}`;
-            document.getElementById('out_max_profit').className = `text-xl font-bold ${isProfitable ? 'text-emerald-600' : 'text-rose-600'}`;
-            document.getElementById('label_profit_main').className = `text-[11px] font-medium mb-0.5 ${isProfitable ? 'text-emerald-700' : 'text-rose-700'}`;
-            document.getElementById('out_max_profit').innerHTML = `${isProfitable ? '+' : '-'} ${Math.abs(Math.round(totalProfitMax)).toLocaleString()} <span class="text-xs font-normal">บาท</span>`;
+            document.getElementById('price_box').className = "p-3 rounded-xl border transition-colors duration-500 " + (priceChange > 0 ? "bg-emerald-50 border-emerald-100" : (priceChange < 0 ? "bg-rose-50 border-rose-100" : "bg-gray-50 border-gray-100"));
+            document.getElementById('input_drop').className = "w-full h-1.5 rounded-lg appearance-none cursor-pointer " + (priceChange > 0 ? "bg-emerald-500" : (priceChange < 0 ? "bg-rose-500" : "bg-gray-300"));
+            document.getElementById('drop_val_display').innerText = (priceChange >= 0 ? "+" : "") + priceChange.toFixed(2) + " ฿/L";
 
-            updateChart(avgDaily, daysRemaining, baseQty, avgDaily * 6, priceChange, isProfitable);
+            updateChart(avgDaily, daysRemaining, baseQty, ullage, priceChange, isProfitable);
         }
 
-        function updateChart(avgDaily, maxDays, baseQty, sales6Days, priceChange, isProfitable) {
+        function updateChart(avgDaily, maxDays, baseQty, ullage, priceChange, isProfitable) {
             const ctx = document.getElementById('optChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
             let dData=[], pData=[];
             for(let i=0; i<=40; i++) {
                 let d = (i/40) * (maxDays + 2);
                 let vol = d * avgDaily;
-                let netProfit = (vol > baseQty ? 2*(vol-baseQty) : 0) + (priceChange * Math.max(0, vol-sales6Days));
+                let netProfit = (vol > baseQty ? 2*(vol-baseQty) : 0) + ((priceChange * vol) * (priceChange < 0 ? 0.5 : 1.0));
                 dData.push(d.toFixed(1)); pData.push(netProfit);
             }
             chartInstance = new Chart(ctx, { type: 'line', data: { labels: dData, datasets: [{ data: pData, borderColor: isProfitable ? '#10b981' : '#f43f5e', tension: 0, pointRadius: 0, fill: true, backgroundColor: isProfitable ? 'rgba(16, 185, 129, 0.05)' : 'rgba(244, 63, 94, 0.05)' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } } });
